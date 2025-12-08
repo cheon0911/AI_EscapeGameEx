@@ -226,10 +226,10 @@ private:
 public:
 	// 마나 시스템
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats");
-	float MaxMana = 50.f;
+	float MaxMana = 100.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats");
-	float CurrentMana = 50.f;
+	float CurrentMana = 100.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats");
 	float ManaRegenRate = 2.f;
@@ -246,6 +246,14 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Skill");
 	FSkillState InvulnerabilirtySkill;
+
+
+	// 내가만든 스킬
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Skill");
+	FSkillState TeleportSkill;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Skill");
+	FSkillState KillSkillStat;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Skill")
 	float DefaultWalkSpeed = 500.f;
@@ -300,6 +308,13 @@ public:
 	// AI에 의해 잡혔을 때 호출되는 함수
 	UFUNCTION(BlueprintCallable, Category = "AI INteraction")
 	void PlayerCaptured(); // 추후 작성될 인터페이스 함수명과 겹치면 오류 발생!
+
+
+
+
+	///  라인 트레이스 히트액터
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Target")
+	AActor* LineHitActor;
 
 private:
 	// 마나 재생 타이머

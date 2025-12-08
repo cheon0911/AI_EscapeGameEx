@@ -80,6 +80,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Properties")
 	float AlertTimeout = 10.f;
 
+	// DetectionSphere 추가
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI|Properties")
+	USphereComponent* DetectionSphere;
+
 	// AI 계급 설정
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Properties")
 	FName AIClass;
@@ -88,7 +92,7 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "AI|Tracking")
 	FVector LastKnownPlayerLocation;
 
-	// 경계시간 관리
+	// 경계시간 관리.  현재 AlertLevel지속중인 시간 기록
 	UPROPERTY(BlueprintReadOnly, Category = "AI|Tracking")
 	float TimeInCurrentAlertLevel;
 
@@ -165,5 +169,6 @@ private:
 	void ResetAlertTimer();
 	void HandleAlertTimeout();
 	void TimerTest();
+
 
 };

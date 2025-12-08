@@ -10,6 +10,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "AIBaseGuard.h"
 #include "Kismet/GameplayStatics.h"
 #include "AI_EscapeGameEx.h"
 
@@ -61,6 +62,11 @@ AAI_EscapeGameExCharacter::AAI_EscapeGameExCharacter()
 	InvulnerabilirtySkill.Duration = 10.f;
 	InvulnerabilirtySkill.ManaCost = 0.f;
 
+	TeleportSkill.ManaCost = 50.f;
+	TeleportSkill.Duration = 3.f;
+
+	KillSkillStat.ManaCost = 30.f;
+	KillSkillStat.Duration = 3.f;
 }
 
 void AAI_EscapeGameExCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -107,6 +113,9 @@ void AAI_EscapeGameExCharacter::SetupPlayerInputComponent(UInputComponent* Playe
 
 		// teleport
 		EnhancedInputComponent->BindAction(TeleportAction, ETriggerEvent::Started, this, &AAI_EscapeGameExCharacter::TeleportPlayer);
+
+		// kill
+		EnhancedInputComponent->BindAction(KillAction, ETriggerEvent::Started, this, &AAI_EscapeGameExCharacter::KillSkill);
 	}
 	else
 	{
@@ -176,6 +185,17 @@ void AAI_EscapeGameExCharacter::DoJumpEnd()
 
 void AAI_EscapeGameExCharacter::TeleportPlayer()
 {
+	if (CurrentMana < TeleportSkill.ManaCost)
+	{
+		return;
+	}
+
+	// 마나 소모 후 스킬 활성화
+	// 마나소모
+	CurrentMana -= TeleportSkill.ManaCost;
+
+	//스킬 활성화
+	TeleportSkill.bIsActive = true;
 	// 1) 애니메이션 재생
 	if (TeleportMontage)
 	{
@@ -187,10 +207,34 @@ void AAI_EscapeGameExCharacter::TeleportPlayer()
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, TeleportSound, GetActorLocation());
 	}
+	FRotator Rot = GetActorRotation();
+	Rot.Yaw -= 90.0f;
+	if (TeleportStartEffect)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			TeleportStartEffect,
+			GetActorLocation(),
+			Rot
+		);
+	}
 
 	// 3) 이동 처리 (Forward로 400만큼)
 	FVector Forward = GetActorForwardVector();
-	FVector TargetLocation = GetActorLocation() + (Forward * 400.f);
+	FVector TargetLocation = GetActorLocation() + (Forward * 1000.f);
+
+	
+
+	if (TeleportEndEffect)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			TeleportEndEffect,
+			TargetLocation,
+			Rot
+			
+		);
+	}
 
 	// 순간이동
 	SetActorLocation(TargetLocation, true);
@@ -198,9 +242,10 @@ void AAI_EscapeGameExCharacter::TeleportPlayer()
 
 void AAI_EscapeGameExCharacter::KillSkill()
 {
+	UE_LOG(LogTemp, Warning, TEXT("Trace Start"));
 	// 1) 라인트레이스로 앞에 캐릭터가 있는지 체크
-	FVector Start = FollowCamera->GetComponentLocation();
-	FVector End = Start + (FollowCamera->GetForwardVector() * 400.f);
+	FVector Start = GetActorLocation() + FVector(0, 0, 50.f);
+	FVector End = Start + (GetActorForwardVector() * 200.f);
 
 	FHitResult Hit;
 	FCollisionQueryParams Params;
@@ -221,21 +266,34 @@ void AAI_EscapeGameExCharacter::KillSkill()
 	if (bHit && Hit.GetActor()->IsA<ACharacter>())
 	{
 		ACharacter* TargetCharacter = Cast<ACharacter>(Hit.GetActor());
-
-		// 3) 애니메이션 재생
-		if (KillMontage)
+		LineHitActor = TargetCharacter;
+		UE_LOG(LogTemp, Warning, TEXT("Hit"));
+		if (AAIBaseGuard* TargetAlert = Cast<AAIBaseGuard>(Hit.GetActor()))
 		{
-			PlayAnimMontage(KillMontage);
-		}
+			UE_LOG(LogTemp, Warning, TEXT("Trace Success"));
+			if (TargetAlert->CurrentAlertLevel == EAlertLevel::Normal)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Kill"));
+				// 3) 애니메이션 재생
+				if (KillMontage)
+				{
+					PlayAnimMontage(KillMontage);
+				}
 
-		// 4) 사운드 재생
-		if (KillSound)
-		{
-			UGameplayStatics::PlaySoundAtLocation(this, KillSound, GetActorLocation());
-		}
+				// 4) 사운드 재생
+				if (KillSound)
+				{
+					UGameplayStatics::PlaySoundAtLocation(this, KillSound, GetActorLocation());
+				}
 
-		// 5) 상대방에게 데미지 / 죽이기
-		UGameplayStatics::ApplyDamage(TargetCharacter, 9999.f, GetController(), this, nullptr);
+				// 5) 상대방에게 데미지 / 죽이기
+				//TargetCharacter->Destroy();
+			}
+		}
+		
+		
+		
+		
 	}
 }
 
@@ -558,9 +616,12 @@ void AAI_EscapeGameExCharacter::StopSprint()
 	// 소리 제거스킬이 활성화 되어있으면 느린 이동속도 유지 
 	if (SilentMovementSkill.bIsActive == false)
 	{
-		GetCharacterMovement()->MaxWalkSpeed = SlowWalkSpeed; // 달리기 속도 지정.
+		GetCharacterMovement()->MaxWalkSpeed = 500.f; // 달리기 속도 지정.
 	}
 
-	
+	if (SilentMovementSkill.bIsActive == true)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = SlowWalkSpeed; // 달리기 속도 지정.
+	}
 	
 }

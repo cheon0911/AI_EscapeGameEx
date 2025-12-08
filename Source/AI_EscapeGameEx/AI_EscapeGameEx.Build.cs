@@ -15,7 +15,8 @@ public class AI_EscapeGameEx : ModuleRules
 			"InputCore",
             "Niagara",
             "EnhancedInput",
-			"AIModule",
+            "NavigationSystem",
+            "AIModule",
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
@@ -26,7 +27,10 @@ public class AI_EscapeGameEx : ModuleRules
 
 		PublicIncludePaths.AddRange(new string[] {
 			"AI_EscapeGameEx",
-			"AI_EscapeGameEx/Variant_Platforming",
+            "AI_EscapeGameEx/MainClass/AIPolice/Public",
+            "AI_EscapeGameEx/MainClass/Item/Public",
+            "AI_EscapeGameEx/MainClass/Money/Public",
+            "AI_EscapeGameEx/Variant_Platforming",
 			"AI_EscapeGameEx/Variant_Platforming/Animation",
 			"AI_EscapeGameEx/Variant_Combat",
 			"AI_EscapeGameEx/Variant_Combat/AI",
