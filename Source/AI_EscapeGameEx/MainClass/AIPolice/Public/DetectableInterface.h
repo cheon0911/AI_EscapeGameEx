@@ -64,3 +64,37 @@ public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Guard")
 	void ReceiveAlert(const FVector& Location, uint8 AlertLevel, AActor* AlertSource);
 };
+
+// GameMode Interface
+UINTERFACE(MinimalAPI)
+class UGameRulesInterface : public UInterface
+{
+	GENERATED_BODY()
+};
+
+class AI_ESCAPEGAMEEX_API IGameRulesInterface
+{
+	GENERATED_BODY()
+
+public:
+	// 플레이어 캡쳐 보고
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GameRules")
+	void ReportPlayerCapture(APawn* CapturePlayer, AActor* Captor);
+
+	// 플레이어 감지 보고
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GameRules")
+	void ReportPlayerDetection(APawn* DetectedPlayer, AActor* Detector);
+
+	// 경계상태 변경 보고
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GameRules")
+	void ReportAlertLevelChange(AActor* Guard, uint8 NewAlertLevel);
+
+	// 플레이어 코인 획득 현황 보고
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GameRules")
+	void ReportGetCoin(int32 type);
+
+	// 플레이어 목숨 유실 현황 보고
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GameRules")
+	int32 ReportCurrentLives();
+	
+};

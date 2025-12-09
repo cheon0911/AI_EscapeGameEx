@@ -11,6 +11,7 @@
 #include "Blueprint/UserWidget.h"
 #include "NiagaraSystem.h"
 #include "NiagaraFunctionLibrary.h"
+#include "DetectableInterface.h"
 #include "AI_EscapeGameExCharacter.generated.h"
 
 class USpringArmComponent;
@@ -45,7 +46,7 @@ struct FSkillState
  *  Implements a controllable orbiting camera
  */
 UCLASS(abstract)
-class AAI_EscapeGameExCharacter : public ACharacter
+class AAI_EscapeGameExCharacter : public ACharacter, public IDetectableInterface // 캐릭터에서 DetectableInterface 상속받아 사용하기 위해 작성
 {
 	GENERATED_BODY()
 
@@ -348,6 +349,12 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Player Skill", meta = (AllowPrivateAccess = "true"))
 	UMaterialInterface* StealthMaterial;
 
+	// IDetectableInterface
+	// DetectableInterface 구현부
+public:
+	virtual bool CanBeDetected_Implementation() const override;
+	virtual bool CanMakeNoise_Implementation() const override;
+	virtual void CapturedByAI_Implementation() override;
 
 };
 

@@ -197,7 +197,7 @@ void AAIBaseGuard::SetAlertLevel(EAlertLevel NewAlertLevel)
 
 void AAIBaseGuard::PursuePlayer()
 {
-	if (!GuardController || TargetPlayer)
+	if (!GuardController || !TargetPlayer)
 	{
 		return;;
 	}

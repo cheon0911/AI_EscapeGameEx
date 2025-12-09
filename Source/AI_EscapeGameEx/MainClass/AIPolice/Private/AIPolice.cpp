@@ -3,6 +3,8 @@
 AAIPolice::AAIPolice()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	AIClass = TEXT("Police");
 }
 
 void AAIPolice::Tick(float DeltaTime)

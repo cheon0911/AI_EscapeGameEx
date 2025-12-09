@@ -48,6 +48,9 @@ AAI_EscapeGameExCharacter::AAI_EscapeGameExCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
 
+	// Lives 3 추가
+	Lives = 3;
+	
 	// AI 게임 관련 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// 스킬 초기화
 	// 살금살금 걷기 스킬 
@@ -62,6 +65,7 @@ AAI_EscapeGameExCharacter::AAI_EscapeGameExCharacter()
 	InvulnerabilirtySkill.Duration = 10.f;
 	InvulnerabilirtySkill.ManaCost = 0.f;
 
+	/////// 내가 만든 거 
 	TeleportSkill.ManaCost = 50.f;
 	TeleportSkill.Duration = 3.f;
 
@@ -409,6 +413,8 @@ void AAI_EscapeGameExCharacter::TryPersuade()
 	bool bPersuasionSuccess = FMath::FRand() < PersuasionChance;
 	if (bPersuasionSuccess && CurrentMana > 20)
 	{
+		// 설득 성공 플래그
+		bIsSucceedPersuasion = true;
 		// 설득 성공 -> 무적 상태 부여
 		// 무적상태 관련 struct 요소 지정
 		bIsCaptured = false;
@@ -512,34 +518,11 @@ void AAI_EscapeGameExCharacter::ActivateStealth()
 	return;
 }
 
-void AAI_EscapeGameExCharacter::PlayerCaptured()
-{
-	// 필터 걸기
-	// 현재 무적 상태인지 확인
-	if (bIsInvulnerable)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("AI Capture attempt IGNORED - Player is Invulnerable"));
-		return;
-	}
-
-	// 현재 스텔스 상태인지 확인
-	if (StealthSkill.bIsActive)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("AI Capture attempt IGNORED - Player is Stealth"));
-		return;
-	}
-
-	bIsCaptured = true;
-	CaptureTime = GetWorld()->GetTimeSeconds(); // 언제 붙잡혔는지 기록 추후 설득 시도시 유효시간 내에 있는지 확인하는용
-
-	UE_LOG(LogTemp, Warning, TEXT("Player Captured by AI!"));
-}
-
 // 마나 리젠 간격(인터벌)로 반복 호출 통해 점진적 마나회복 로직 구현
 void AAI_EscapeGameExCharacter::RegenerationMana()
 {
 	CurrentMana = FMath::Min(CurrentMana + ManaRegenRate, MaxMana);
-	UE_LOG(LogTemp, Warning, TEXT("%1.f of Mana Regen"), ManaRegenRate);
+
 }
 
 void AAI_EscapeGameExCharacter::EndSilentMovement()
@@ -624,4 +607,100 @@ void AAI_EscapeGameExCharacter::StopSprint()
 		GetCharacterMovement()->MaxWalkSpeed = SlowWalkSpeed; // 달리기 속도 지정.
 	}
 	
+}
+
+// DetectableInterface 함수 구현부
+bool AAI_EscapeGameExCharacter::CanBeDetected_Implementation() const
+{
+	// 현재 잡히면 안되는 상태이지 확인하여 T or F 반화낳도록 코드 작성
+	// 스텔스 상태거나 무적 상태면 Detect(감지) 불가
+	return !(StealthSkill.bIsActive || bIsInvulnerable || bIsInStealthMode); 
+}
+
+bool AAI_EscapeGameExCharacter::CanMakeNoise_Implementation() const
+{
+	// 소음 발생 가능 상태일 때만 소음 감지
+	return bCanMakeNoise && !SilentMovementSkill.bIsActive;
+}
+
+void AAI_EscapeGameExCharacter::CapturedByAI_Implementation()
+{
+	// AI 경찰 (Police)에 의해 호출되는 함수
+	// bIsInvulnerable이면 캡쳐 불가하도록 필터링
+	if (bIsInvulnerable)
+	{
+		UE_LOG(LogTemp, Display, TEXT("AI Capture Attempt Ignored. Player is Invulnerable."));
+		return;
+	}
+	if (StealthSkill.bIsActive)
+	{
+		UE_LOG(LogTemp, Display, TEXT("AI Capture Attempt Ignored. Player is Stealth."));
+		return;
+	}
+	
+	// 잡혔다고 표시
+	bIsCaptured = true;
+	CaptureTime = GetWorld()->GetTimeSeconds();
+	bIsInvulnerable = true; // 무적 처리
+	InvulnerabilirtySkill.bIsActive = true;
+
+	// PlayerCaptured 타이머의 중복 호출 방지를 위해 필터 작성
+	if (!bIsTimerSet) 
+	{
+		bIsTimerSet = true;  // 한번 들어오면 바로 true로 바뀌니까 tick도 1번만 작동하게 가능
+		UE_LOG(LogTemp, Display, TEXT("Player Captured by AI Police!! Player Can Use Persuasion Skill within %.1f seconds"), PersuasionWindow);
+		GetWorldTimerManager().SetTimer(CapturedTimerHandle, this, &AAI_EscapeGameExCharacter::PlayerCaptured, PersuasionWindow, false); // 5초동안 기다리기 
+	}
+}
+
+void AAI_EscapeGameExCharacter::PlayerCaptured()
+{
+	// 타이머 셋 해제
+	bIsTimerSet = false;
+	
+	// 현재 설득에 성공한 상태인지 확인 
+	if (!bIsSucceedPersuasion)
+	{
+		// 플레이어 캡쳐 처리(게임 플레이 내부에 효과 추가, UI 표시 등)
+		// 게임모드 만든 후 플레이어 캡쳐 보고로직 작성. 추후 게임모드 디자인 후 업데이트
+		
+		// 플레이어 생명 1 감소 후 최신화
+		Lives--;
+		UE_LOG(LogTemp, Display, TEXT("You Just Loose A Life!. Remaning Live(s) : %d"), Lives);
+
+		// 캡쳐 타이머 초기화
+		bIsTimerSet = false;
+	}
+
+	// 플레이어 생명이 0일 경우 GameOver
+	if (Lives <= 0)
+	{
+		GameOver();
+	}
+
+	bIsCaptured = true;
+	CaptureTime = GetWorld()->GetTimeSeconds(); // 언제 붙잡혔는지 기록 추후 설득 시도시 유효시간 내에 있는지 확인하는용
+
+	UE_LOG(LogTemp, Warning, TEXT("Player Captured by AI!"));
+	
+
+
+	// 설득 성공여부 확인 후 설득 실패시 플레이어 생명 감소 등 로직 작동. 추후 플레이어 내부에서 로직 작동하도록 분리
+
+		/* 이미 플레이어가 Captured 된 경우, Pursasion만 변수로 두도록 무적상태와 스텔스상태는 예외처리.
+	// 필터 걸기
+	// 현재 무적 상태인지 확인
+	if (bIsInvulnerable)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AI Capture attempt IGNORED - Player is Invulnerable"));
+		return;
+	}
+
+	// 현재 스텔스 상태인지 확인
+	if (StealthSkill.bIsActive)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AI Capture attempt IGNORED - Player is Stealth"));
+		return;
+	}
+	*/
 }
