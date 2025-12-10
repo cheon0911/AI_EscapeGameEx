@@ -650,13 +650,16 @@ void AAI_EscapeGameExCharacter::CapturedByAI_Implementation()
 		bIsTimerSet = true;  // 한번 들어오면 바로 true로 바뀌니까 tick도 1번만 작동하게 가능
 		UE_LOG(LogTemp, Display, TEXT("Player Captured by AI Police!! Player Can Use Persuasion Skill within %.1f seconds"), PersuasionWindow);
 		GetWorldTimerManager().SetTimer(CapturedTimerHandle, this, &AAI_EscapeGameExCharacter::PlayerCaptured, PersuasionWindow, false); // 5초동안 기다리기 
+
+	
 	}
 }
 
 void AAI_EscapeGameExCharacter::PlayerCaptured()
 {
-	// 타이머 셋 해제
-	bIsTimerSet = false;
+	
+	bIsInvulnerable = false;
+	bIsCaptured = false;
 	
 	// 현재 설득에 성공한 상태인지 확인 
 	if (!bIsSucceedPersuasion)

@@ -60,10 +60,10 @@ void AAI_EscapeGameExGameMode::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
-	UE_LOG(LogTemp, Error, TEXT("CurrentCaptureCount = %d / Max = %d"),
-		CurrentCaptureCount,
-		MaxCaptureCount
-	);
+	//UE_LOG(LogTemp, Error, TEXT("CurrentCaptureCount = %d / Max = %d"),
+		//CurrentCaptureCount,
+		//MaxCaptureCount
+	//);
 
 	// 게임 진행중에만 타이머 감소하도록 디자인
 	if (!bGameEnded)
@@ -330,6 +330,7 @@ void AAI_EscapeGameExGameMode::UpdateGameTimer()
 // IGameRulesInterface 구현부
 void AAI_EscapeGameExGameMode::ReportPlayerCapture_Implementation(APawn* CapturePlayer, AActor* Captor)
 {
+	UE_LOG(LogTemp, Error, TEXT("Implementation Active"));
 	// 플레이어 체포시 보고 처리
 	if (!bGameEnded)
 	{

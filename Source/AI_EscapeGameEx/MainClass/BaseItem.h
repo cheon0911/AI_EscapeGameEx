@@ -50,7 +50,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	float SecondFloor;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Item")
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category = "Item")
 	bool bIsOn2F;
 
 	// 2층 여부 확인하는 함수

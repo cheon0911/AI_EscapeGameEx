@@ -33,7 +33,7 @@ void ACoin::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent,
 {
 	// 플레이어 확인
 	AAI_EscapeGameExCharacter* PlayerCharacter = Cast<AAI_EscapeGameExCharacter>(OtherActor);
-	if (PlayerCharacter)
+	if (!PlayerCharacter)
 	{
 		return;
 	}
