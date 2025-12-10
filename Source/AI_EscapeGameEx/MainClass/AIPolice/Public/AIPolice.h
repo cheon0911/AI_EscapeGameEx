@@ -28,6 +28,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Police Feature")
 	int32 Age;
 
+	virtual void UpdateBlackboard();
+
+
+
 private:
 	bool bIsResting;
 

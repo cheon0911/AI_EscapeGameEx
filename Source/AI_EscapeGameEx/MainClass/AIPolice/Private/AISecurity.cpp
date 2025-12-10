@@ -42,19 +42,20 @@ void AAISecurity::BeginPlay()
 	// AI Controller 있으면 이동 완료 이벤트 바인딩
 	if (AIController)
 	{
-		// 디버깅 에러 방지를 위해 언바인딩 코드 실행
-		AIController->ReceiveMoveCompleted.RemoveDynamic(this, &AAISecurity::OnMoveCompleted);
+	//	// 디버깅 에러 방지를 위해 언바인딩 코드 실행
+	//	AIController->ReceiveMoveCompleted.RemoveDynamic(this, &AAISecurity::OnMoveCompleted);
 
-		// AI Controller 내부 이벤트에 AISecurity 함수 바인딩. 옵저버 구현.
-		AIController->ReceiveMoveCompleted.AddDynamic(this, &AAISecurity::OnMoveCompleted);
+	//	// AI Controller 내부 이벤트에 AISecurity 함수 바인딩. 옵저버 구현.
+	//	AIController->ReceiveMoveCompleted.AddDynamic(this, &AAISecurity::OnMoveCompleted);
 	}
+
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("There's No AI Controller"));
 	}
 
 	// 바로 순찰 시작
-	StartMoving();
+	//StartMoving();
 }
 
 void AAISecurity::MoveToTarget()

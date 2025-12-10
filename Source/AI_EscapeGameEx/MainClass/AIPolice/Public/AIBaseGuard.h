@@ -6,9 +6,11 @@
 #include "Perception/AIPerceptionTypes.h"
 #include "Perception/PawnSensingComponent.h"
 #include "DetectableInterface.h"
+#include "MainClass/AIPolice/BlackboardKeys.h"
 #include "AIBaseGuard.generated.h"
 
 // 전방 선언
+class UBlackboardComponent;
 class UAIPerceptionComponent;
 class UPawnSensingComponent;
 class USphereComponent;
@@ -110,6 +112,11 @@ public:
 	virtual APawn* GetTargetPlayer_Implementation() const override;
 	virtual void ReceiveAlert_Implementation(const FVector& Location, uint8 AlertLevel, AActor* AlertSource) override;
 
+	// 블랙보드 업데이트 함수
+	UFUNCTION(BlueprintCallable, Category = "AI|Blackboard")
+	virtual void UpdateBlackboard();
+
+
 protected:
 
 	virtual void BeginPlay() override;
@@ -121,6 +128,10 @@ protected:
 	// 타이머 핸들
 	FTimerHandle AlertTimerHandle;
 	FTimerHandle TestTimerHandle;
+
+	// 블랙보드 컴포넌트 참조
+	UPROPERTY()
+	UBlackboardComponent* BlackboardComponent;
 
 public:
 	// AI Guard 함수 모음 /////////////////////////////////////////////////////////////////////////////////////////

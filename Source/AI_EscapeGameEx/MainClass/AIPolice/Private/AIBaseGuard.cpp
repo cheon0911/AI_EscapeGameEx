@@ -9,6 +9,7 @@
 #include "NavigationSystem.h"
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
+#include "MainClass/AIPolice/BlackboardKeys.h"
 
 AAIBaseGuard::AAIBaseGuard()
 {
@@ -71,8 +72,15 @@ void AAIBaseGuard::Tick(float DeltaTime)
         break;
 
     case EAlertLevel::Suspicious:
-    case EAlertLevel::Alert:
         InvestigateLastKnownLocation();
+        break;
+
+    case EAlertLevel::Alert:
+        if (AIClass != "Police")
+        {
+            InvestigateLastKnownLocation();
+        }
+        
         break;
 
     case EAlertLevel::Pursuit:
@@ -102,6 +110,10 @@ void AAIBaseGuard::OnPlayerdetected(APawn* DetectedPawn)
             LastKnownPlayerLocation = DetectedPawn->GetActorLocation();
             TargetPlayer = DetectedPawn;
             SetAlertLevel(EAlertLevel::Pursuit);
+            
+            // Blackboard 데이터 최신화
+            UpdateBlackboard();
+
             AlertOtherGuards(LastKnownPlayerLocation);
         }
         else
@@ -120,6 +132,8 @@ void AAIBaseGuard::OnHearNoise(APawn* NoiseMaker, const FVector& Location, float
     if (IDetectableInterface::Execute_CanMakeNoise(NoiseMaker))
     {
         LastKnownPlayerLocation = Location;
+
+        UpdateBlackboard();
 
         if (Volume > 0.7f)
         {
@@ -146,6 +160,8 @@ void AAIBaseGuard::SetAlertLevel(EAlertLevel NewAlertLevel)
     CurrentAlertLevel = NewAlertLevel;
     TimeInCurrentAlertLevel = 0.f;
 
+    UpdateBlackboard();
+
     ResetAlertTimer();
 
     if (CurrentAlertLevel == EAlertLevel::Pursuit)
@@ -160,7 +176,12 @@ void AAIBaseGuard::PursuePlayer()
 
     if (AIClass != "Police") return;
 
-    GuardController->MoveToActor(TargetPlayer, -1.f, true, true, true);
+    if (GuardController)
+    {
+        UpdateBlackboard();
+    }
+
+   // GuardController->MoveToActor(TargetPlayer, -1.f, true, true, true);
 
     if (FMath::RandBool())
     {
@@ -172,12 +193,15 @@ void AAIBaseGuard::InvestigateLastKnownLocation()
 {
     if (!GuardController || LastKnownPlayerLocation.IsZero()) return;
 
-    GuardController->MoveToLocation(LastKnownPlayerLocation, -1.f, true, true, true);
+    UpdateBlackboard();
+
+   /* GuardController->MoveToLocation(LastKnownPlayerLocation, -1.f, true, true, true);
 
     float DistanceToTarget = FVector::Dist(GetActorLocation(), LastKnownPlayerLocation);
 
     if (DistanceToTarget < 100.f)
     {
+        // 주변 탐지
         UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetCurrent(GetWorld());
 
         if (NavSystem)
@@ -188,10 +212,15 @@ void AAIBaseGuard::InvestigateLastKnownLocation()
                 LastKnownPlayerLocation = RandomLocation.Location;
             }
         }
-    }
+    }*/
+
+
 }
 
-void AAIBaseGuard::Patrol() {}
+void AAIBaseGuard::Patrol() 
+{
+
+}
 
 void AAIBaseGuard::CapturePlayer()
 {
@@ -352,4 +381,65 @@ void AAIBaseGuard::ReceiveAlert_Implementation(const FVector& Location, uint8 Al
 
 	// 보고받은 위치로 이동하여 수사 개시
 	InvestigateLastKnownLocation();
+}
+
+void AAIBaseGuard::UpdateBlackboard()
+{
+    if (!GuardController)
+    {
+        GuardController = Cast<AAIController>(GetController());
+    }
+    if (!GuardController)
+    {
+        return;
+    }
+
+    // 블랙보드 컴포넌트 참조
+    BlackboardComponent = GuardController->GetBlackboardComponent();
+    if (!BlackboardComponent)
+    {
+        return;
+    }
+
+    // 블랙보드 키 업데이트
+    if (BlackboardComponent->GetKeyID(FBlackboardKeys::TargetPlayer)!= FBlackboard::InvalidKey)
+    {
+        BlackboardComponent->SetValueAsObject(FBlackboardKeys::TargetPlayer, TargetPlayer);
+    }
+
+    if (BlackboardComponent->GetKeyID(FBlackboardKeys::LastKnwonLocation) != FBlackboard::InvalidKey)
+    {
+        BlackboardComponent->SetValueAsVector(FBlackboardKeys::LastKnwonLocation, LastKnownPlayerLocation);
+    }
+
+    if (BlackboardComponent->GetKeyID(FBlackboardKeys::AlertLevel) != FBlackboard::InvalidKey)
+    {
+        BlackboardComponent->SetValueAsEnum(FBlackboardKeys::AlertLevel, static_cast<uint8>(CurrentAlertLevel));
+    }
+
+    if (BlackboardComponent->GetKeyID(FBlackboardKeys::bIsPlayerDetected) != FBlackboard::InvalidKey)
+    {
+        BlackboardComponent->SetValueAsBool(FBlackboardKeys::bIsPlayerDetected, TargetPlayer != nullptr);
+    }
+
+    //// Police 전용 키 업데이트 -> AI Police에서 진행
+    //if (AIClass == "Police")
+    //{
+    //    //AAIPolice* Police == Cast<AAIPolice>(this);
+    //    if (BlackboardComponent->GetKeyID(FBlackboardKeys::bCanPursue) != FBlackboard::InvalidKey)
+    //    {
+    //        BlackboardComponent->SetValueAsBool (FBlackboardKeys::bCanPursue, true);
+    //    }
+
+    //}
+    //else
+    //{
+    //    if (BlackboardComponent->GetKeyID(FBlackboardKeys::bCanPursue) != FBlackboard::InvalidKey)
+    //    {
+    //        BlackboardComponent->SetValueAsBool(FBlackboardKeys::bCanPursue, false);
+    //    }
+    //}
+
+
+
 }

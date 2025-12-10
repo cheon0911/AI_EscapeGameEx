@@ -1,10 +1,18 @@
 #include "MainClass/AIPolice/Public/AIPolice.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "MainClass/AIPolice/BlackboardKeys.h"
+#include "AIController.h"
 
 AAIPolice::AAIPolice()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
 	AIClass = TEXT("Police");
+
+	Age = 25.f;
+	MaxStamina = 100.f;
+	StaminaDrainRate = 2.f;
+	StaminaRecoveryRate = 2.f;
 }
 
 void AAIPolice::Tick(float DeltaTime)
@@ -21,8 +29,10 @@ void AAIPolice::Tick(float DeltaTime)
 	}
 
 	// 추격중일때 스태미나 소모
-	else if (CurrentAlertLevel == EAlertLevel::Pursuit && !bIsResting)
+	else if (CurrentAlertLevel == EAlertLevel::Pursuit)
 	{
+		bIsResting = false;
+
 		// Stamina 소진
 		Stamina -= (StaminaDrainRate * DeltaTime * (Age * 0.04)); // 나이많을수록 스태미나 소모가 커지는 로직
 		Stamina = FMath::Max(Stamina, 0.0f);  
@@ -32,7 +42,10 @@ void AAIPolice::Tick(float DeltaTime)
 		{
 			bIsResting = true;
 			UE_LOG(LogTemp, Warning, TEXT("PoliceGuard is Exhausted! Can't Pursue Player Anymore"));
-			SetAlertLevel(EAlertLevel::Alert); // 경계상태로 전환
+			SetAlertLevel(EAlertLevel::Normal); // 경계상태로 전환
+
+			// Blackboard 데이터 업데이트
+			UpdateBlackboard();
 		}
 	}
 
@@ -48,4 +61,48 @@ void AAIPolice::Tick(float DeltaTime)
 			bIsResting = false;
 		}
 	}
+}
+
+void AAIPolice::UpdateBlackboard()
+{
+	// 부모 클래스 UpdateBlackboard()를 먼저 실행
+	Super::UpdateBlackboard();
+
+	if (!GuardController)
+	{
+		GuardController = Cast<AAIController>(GetController());
+	}
+
+	if (!GuardController)
+	{
+		return;
+	}
+
+	UBlackboardComponent* BlackboardComp = GuardController->GetBlackboardComponent();
+
+	if (!BlackboardComp)
+	{
+		return;
+	}
+
+    if (BlackboardComponent->GetKeyID(FBlackboardKeys::bCanPursue) != FBlackboard::InvalidKey)
+    {
+        BlackboardComponent->SetValueAsBool (FBlackboardKeys::bCanPursue, true);
+    }
+
+	else
+	{
+		if (BlackboardComponent->GetKeyID(FBlackboardKeys::bCanPursue) != FBlackboard::InvalidKey)
+		{
+			BlackboardComponent->SetValueAsBool(FBlackboardKeys::bCanPursue, false);
+		}
+
+	}
+
+	if (BlackboardComponent->GetKeyID(FBlackboardKeys::bIsExhausted) != FBlackboard::InvalidKey)
+	{
+		BlackboardComponent->SetValueAsBool(FBlackboardKeys::bIsExhausted, Stamina < 10.f);
+	}
+
+
 }
